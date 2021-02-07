@@ -1,0 +1,10 @@
+server:
+  build: ./server
+  ports:
+    - "5000:5000"
+  links:
+    - client
+client:
+  build: ./client
+  ports:
+      - "3000:3000"
