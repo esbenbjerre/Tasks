@@ -23,18 +23,18 @@ let webApp =
         subRoute "/api"
             (choose [
                 GET >=> authorizeWithApiKey >=> choose [
-                    route "/profile" >=> User.getUserProfile
-                    route "/tasks" >=> Task.getOpenTasks
-                    route "/users" >=> User.getAllUsers
-                    route "/groups" >=> Group.getGroups
+                    route "/profile" >=> User.getProfile
+                    route "/tasks" >=> Task.getAllOpen
+                    route "/users" >=> User.getAll
+                    route "/groups" >=> Group.getAll
                 ]
                 POST >=> choose [
                     route "/login" >=> tryBindJson<LoginRequest> parsingError User.authenticate
                     authorizeWithApiKey >=> subRoute "/tasks" (
                         choose [
-                            route "/create" >=> tryBindJson<CreateTaskRequest> parsingError (validateModel Task.createTask)
-                            routef "/complete/%i" Task.completeTask
-                            routef "/delete/%i" Task.deleteTask
+                            route "/create" >=> tryBindJson<CreateTaskRequest> parsingError (validateModel Task.create)
+                            routef "/complete/%i" (fun id -> canModifyTask id >=> Task.complete id)
+                            routef "/delete/%i" (fun id -> canModifyTask id >=> Task.delete id)
                     ])
                 ]
             ])

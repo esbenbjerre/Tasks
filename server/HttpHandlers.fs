@@ -34,14 +34,14 @@ module HttpHandlers =
                             return! (setStatusCode 401 >=> json invalidUsernameOrPassword) next ctx
                 }
         
-        let getAllUsers =
+        let getAll =
             fun (next: HttpFunc) (ctx: HttpContext) ->
                 task {
                     let! users = Database.Queries.User.getAllUsers ()
                     return! json (users |> List.ofSeq) next ctx
                 }
 
-        let getUserProfile =
+        let getProfile =
             fun (next: HttpFunc) (ctx: HttpContext) ->
                 task {
                     let user = ctx.GetService<UserService>().user
@@ -50,7 +50,7 @@ module HttpHandlers =
 
     module Group =
 
-        let getGroups =
+        let getAll =
             fun (next: HttpFunc) (ctx: HttpContext) ->
                 task {
                     let! groups = Database.Queries.Group.getAllGroups ()
@@ -59,7 +59,7 @@ module HttpHandlers =
 
     module Task =
 
-        let getOpenTasks =
+        let getAllOpen =
             fun (next: HttpFunc) (ctx: HttpContext) ->
                 task {
                     let user = ctx.GetService<UserService>().user
@@ -67,28 +67,21 @@ module HttpHandlers =
                     return! json (tasks |> List.ofSeq) next ctx
                 }
 
-        let createTask (t: CreateTaskRequest) =
+        let create (t: CreateTaskRequest) =
             fun (next: HttpFunc) (ctx: HttpContext) ->
                 task {
                     let! _ = Database.Queries.Task.createTask t
                     return! json {Message = "Task created successfully"} next ctx
                 }
 
-        let deleteTask (id: int) =
+        let delete (id: int) =
             fun (next: HttpFunc) (ctx: HttpContext) ->
                 task {
-                    let user = ctx.GetService<UserService>().user
-                    match! Database.Queries.Task.getAssignedUser id with
-                    | None -> return! json {Message = "Unable to determine assigned user"} next ctx
-                    | Some assignedUserId ->
-                        if assignedUserId = user.Id then
-                            let! _ = Database.Queries.Task.deleteTask id
-                            return! json {Message = "Task deleted successfully"} next ctx
-                        else
-                            return! (setStatusCode 400 >=> json {Message = "You cannot delete a task assigned to someone else"}) next ctx
+                    let! _ = Database.Queries.Task.deleteTask id
+                    return! json {Message = "Task deleted successfully"} next ctx
                 }
 
-        let completeTask (id: int) =
+        let complete (id: int) =
             fun (next: HttpFunc) (ctx: HttpContext) ->
                 task {
                     match! Database.Queries.Task.getTaskById id with
@@ -96,18 +89,11 @@ module HttpHandlers =
                     | Some t when t.Completed -> return! (setStatusCode 400 >=> json {Message = "Task is already completed"}) next ctx
                     | Some t when t.Deleted -> return! (setStatusCode 400 >=> json {Message = "A deleted task cannot be marked as complete"}) next ctx
                     | Some t ->
-                        let user = ctx.GetService<UserService>().user
-                        match! Database.Queries.Task.getAssignedUser id with
-                        | None -> return! json {Message = "Unable to determine assigned user"} next ctx
-                        | Some assignedUserId ->
-                            if assignedUserId = user.Id then
-                                let! _ = Database.Queries.Task.completeTask id
-                                match t.RecurringInterval with
-                                | None -> ()
-                                | Some _ ->
-                                    let! _ = Database.Queries.Task.rescheduleRecurringTask id
-                                    ()
-                                return! json {Message = "Task marked as complete"} next ctx
-                            else
-                                return! (setStatusCode 400 >=> json {Message = "You cannot complete a task assigned to someone else"}) next ctx
+                        let! _ = Database.Queries.Task.completeTask id
+                        match t.RecurringInterval with
+                        | None -> ()
+                        | Some _ ->
+                            let! _ = Database.Queries.Task.rescheduleRecurringTask id
+                            ()
+                        return! json {Message = "Task marked as complete"} next ctx
                 }
