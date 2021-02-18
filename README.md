@@ -1,6 +1,6 @@
 # tasks
 
-You will probably need to edit the password and location of the HTTPS certificate in `docker-compose.yml` (see [this](https://docs.microsoft.com/en-us/aspnet/core/security/docker-compose-https?view=aspnetcore-5.0)).
+You will probably need to create self-signed certificate (see [this](https://docs.microsoft.com/en-us/dotnet/core/additional-tools/self-signed-certificates-guide)) and edit the location and password of the HTTPS certificate in `docker-compose.yml` accordingly (see [this](https://docs.microsoft.com/en-us/aspnet/core/security/docker-compose-https?view=aspnetcore-5.0)).
 ```
 - ASPNETCORE_Kestrel__Certificates__Default__Password=secret
 - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/server.pfx
